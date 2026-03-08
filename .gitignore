@@ -1,6 +1,7 @@
 # env + secrets
 .env
 .venv/
+CitizenTracker.zip
 
 # python
 __pycache__/
