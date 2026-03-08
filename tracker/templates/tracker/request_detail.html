@@ -1,0 +1,55 @@
+{% extends "tracker/base.html" %}
+{% block title %}Request #{{ obj.id }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h3 m-0">Request #{{ obj.id }}</h1>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'tracker:request_list' %}">Back</a>
+    </div>
+
+    <div class="card card-body mb-3">
+      <h2 class="h5">{{ obj.title }}</h2>
+      <div class="text-muted mb-2">
+        Category: <strong>{{ obj.category.name }}</strong> |
+        Status: <strong>{{ obj.get_status_display }}</strong> |
+        Priority: <strong>{{ obj.get_priority_display }}</strong>
+      </div>
+      <p class="mb-2">{{ obj.description }}</p>
+
+      <div class="small text-muted">
+        Created by: {{ obj.created_by.username }} |
+        Assigned to: {% if obj.assigned_to %}{{ obj.assigned_to.username }}{% else %}-{% endif %}<br/>
+        Created: {{ obj.created_at|date:"Y-m-d H:i" }} |
+        Updated: {{ obj.updated_at|date:"Y-m-d H:i" }}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+      <a class="btn btn-primary" href="{% url 'tracker:request_update' obj.id %}">Edit</a>
+      <a class="btn btn-outline-danger" href="{% url 'tracker:request_delete' obj.id %}">Delete</a>
+    </div>
+
+    {% if status_changes %}
+    <h3 class="h5 mb-2">Status History</h3>
+    <table class="table table-sm table-bordered">
+      <thead>
+        <tr>
+          <th>From</th>
+          <th>To</th>
+          <th>Changed by</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sc in status_changes %}
+        <tr>
+          <td>{{ sc.get_old_status_display }}</td>
+          <td>{{ sc.get_new_status_display }}</td>
+          <td>{% if sc.changed_by %}{{ sc.changed_by.username }}{% else %}System{% endif %}</td>
+          <td>{{ sc.changed_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+{% endblock %}

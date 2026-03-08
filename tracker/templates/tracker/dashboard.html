@@ -1,0 +1,52 @@
+{% extends "tracker/base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h3 m-0">Dashboard</h1>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'tracker:request_list' %}">Back to list</a>
+    </div>
+
+    <div class="alert alert-primary">Total requests: <strong>{{ total }}</strong></div>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="card card-body">
+          <h2 class="h6">By Status</h2>
+          <ul class="mb-0">
+            {% for row in by_status %}
+              <li>{{ row.status }} — {{ row.total }}</li>
+            {% empty %}
+              <li class="text-muted">No data</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card card-body">
+          <h2 class="h6">By Priority</h2>
+          <ul class="mb-0">
+            {% for row in by_priority %}
+              <li>{{ row.priority }} — {{ row.total }}</li>
+            {% empty %}
+              <li class="text-muted">No data</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card card-body">
+          <h2 class="h6">By Category</h2>
+          <ul class="mb-0">
+            {% for row in by_category %}
+              <li>{{ row.category__name }} — {{ row.total }}</li>
+            {% empty %}
+              <li class="text-muted">No data</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+{% endblock %}

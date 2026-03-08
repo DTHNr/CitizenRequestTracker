@@ -1,0 +1,15 @@
+{% extends "tracker/base.html" %}
+{% block title %}Delete Request{% endblock %}
+
+{% block content %}
+    <h1 class="h4 mb-3">Delete Request #{{ obj.id }}</h1>
+    <div class="alert alert-warning">
+      Are you sure you want to delete: <strong>{{ obj.title }}</strong>?
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn btn-danger" type="submit">Yes, delete</button>
+      <a class="btn btn-outline-secondary" href="{% url 'tracker:request_detail' obj.id %}">Cancel</a>
+    </form>
+{% endblock %}

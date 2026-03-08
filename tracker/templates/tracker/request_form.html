@@ -1,0 +1,18 @@
+{% extends "tracker/base.html" %}
+{% block title %}{% if mode == "create" %}New{% else %}Edit{% endif %} Request{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h3 m-0">{% if mode == "create" %}New{% else %}Edit{% endif %} Request</h1>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'tracker:request_list' %}">Back</a>
+    </div>
+
+    <form method="post" class="card card-body">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" href="{% url 'tracker:request_list' %}">Cancel</a>
+      </div>
+    </form>
+{% endblock %}

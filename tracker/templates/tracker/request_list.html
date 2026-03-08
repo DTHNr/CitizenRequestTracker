@@ -1,0 +1,99 @@
+{% extends "tracker/base.html" %}
+{% block title %}Citizen Requests{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h3 m-0">Citizen Requests</h1>
+      <div>
+        <a class="btn btn-outline-primary btn-sm me-2" href="{% url 'tracker:dashboard' %}">Dashboard</a>
+        <a class="btn btn-outline-success btn-sm me-2"
+           href="{% url 'tracker:request_export_csv' %}?q={{ q }}&status={{ status }}&priority={{ priority }}">
+          Export CSV
+        </a>
+        <a class="btn btn-primary btn-sm me-2" href="{% url 'tracker:request_create' %}">New Request</a>
+        <span class="me-2">Logged in as <strong>{{ request.user.username }}</strong></span>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'admin:logout' %}">Logout</a>
+      </div>
+    </div>
+
+    <form class="row g-2 mb-3" method="get">
+      <div class="col-md-5">
+        <input class="form-control" name="q" value="{{ q }}" placeholder="Search title/description/category">
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" name="status">
+          <option value="">All statuses</option>
+          {% for v, label in status_choices %}
+            <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" name="priority">
+          <option value="">All priorities</option>
+          {% for v, label in priority_choices %}
+            <option value="{{ v }}" {% if priority == v %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-1 d-grid">
+        <button class="btn btn-primary">Go</button>
+      </div>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Created by</th>
+            <th>Assigned to</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in page_obj %}
+          <tr>
+            <td>{{ r.id }}</td>
+            <td><a href="{% url 'tracker:request_detail' r.id %}">{{ r.title }}</a></td>
+            <td>{{ r.category.name }}</td>
+            <td>{{ r.get_status_display }}</td>
+            <td>{{ r.get_priority_display }}</td>
+            <td>{{ r.created_by.username }}</td>
+            <td>{% if r.assigned_to %}{{ r.assigned_to.username }}{% else %}-{% endif %}</td>
+            <td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'tracker:request_update' r.id %}">Edit</a>
+              <a class="btn btn-sm btn-outline-danger" href="{% url 'tracker:request_delete' r.id %}">Delete</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="text-muted">No requests found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <nav>
+      <ul class="pagination">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status }}&priority={{ priority }}&page={{ page_obj.previous_page_number }}">Prev</a></li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Prev</span></li>
+        {% endif %}
+
+        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status }}&priority={{ priority }}&page={{ page_obj.next_page_number }}">Next</a></li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Next</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+{% endblock %}
