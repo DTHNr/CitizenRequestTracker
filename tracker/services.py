@@ -39,10 +39,6 @@ def get_request_queryset(
 
 
 def create_request(user, cleaned_data: dict) -> Request:
-    """
-    Create a new Request, enforcing business rules:
-    - Non-staff users always get PENDING status and no assignee.
-    """
     obj = Request(**cleaned_data)
     obj.created_by = user
 
@@ -51,6 +47,15 @@ def create_request(user, cleaned_data: dict) -> Request:
         obj.status = Request.Status.PENDING
 
     obj.save()
+
+    StatusChange.objects.create(
+        request=obj,
+        old_status=obj.status,
+        new_status=obj.status,
+        changed_by=user,
+        notes="Initial status on request creation",
+    )
+
     return obj
 
 

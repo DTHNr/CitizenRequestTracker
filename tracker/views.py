@@ -3,15 +3,15 @@ import csv
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from .forms import RequestForm
-from .models import Request
+from .models import Request, StatusChange
 from . import services
 from . import permissions as perms
-
+from django.db.models.functions import TruncDate
 
 def _get_filter_params(request):
     """Extract common filter params from the GET querystring."""
@@ -80,14 +80,18 @@ def dashboard(request):
     by_priority = qs.values("priority").annotate(total=Count("id")).order_by("priority")
     by_category = qs.values("category__name").annotate(total=Count("id")).order_by("category__name")
 
+    pending_count = qs.filter(status=Request.Status.PENDING).count()
+    resolved_count = qs.filter(status=Request.Status.RESOLVED).count()
+
     context = {
-        "total": qs.count(),
+        "total_requests": qs.count(),
+        "pending_count": pending_count,
+        "resolved_count": resolved_count,
         "by_status": by_status,
         "by_priority": by_priority,
         "by_category": by_category,
     }
     return render(request, "tracker/dashboard.html", context)
-
 
 @login_required
 @never_cache
@@ -145,3 +149,70 @@ def request_delete(request, pk: int):
         return redirect("tracker:request_list")
 
     return render(request, "tracker/request_confirm_delete.html", {"obj": obj})
+
+@login_required
+@never_cache
+def dashboard_analytics(request):
+    qs = services.get_request_queryset(user=request.user)
+
+    status_qs = StatusChange.objects.filter(request__in=qs)
+
+    status_data = (
+        status_qs.annotate(day=TruncDate("changed_at"))
+        .values("day", "new_status")
+        .annotate(total=Count("id"))
+        .order_by("day")
+    )
+
+    priority_data = (
+        qs.annotate(day=TruncDate("created_at"))
+        .values("day", "priority")
+        .annotate(total=Count("id"))
+        .order_by("day")
+    )
+
+    category_data = (
+        qs.annotate(day=TruncDate("created_at"))
+        .values("day", "category__name")
+        .annotate(total=Count("id"))
+        .order_by("day")
+    )
+
+    return JsonResponse({
+        "status_data": list(status_data),
+        "priority_data": list(priority_data),
+        "category_data": list(category_data),
+    })
+
+@login_required
+@never_cache
+def dashboard_live_summary(request):
+    qs = services.get_request_queryset(user=request.user)
+
+    status_counts = {}
+    for value, label in Request.Status.choices:
+        status_counts[value] = qs.filter(status=value).count()
+
+    priority_counts = {}
+    for value, label in Request.Priority.choices:
+        priority_counts[value] = qs.filter(priority=value).count()
+
+    category_counts = (
+        qs.values("category__name")
+        .annotate(total=Count("id"))
+        .order_by("category__name")
+    )
+
+    priority_status_counts = (
+        qs.values("priority", "status")
+        .annotate(total=Count("id"))
+        .order_by("priority", "status")
+    )
+
+    return JsonResponse({
+        "status_counts": status_counts,
+        "priority_counts": priority_counts,
+        "category_counts": list(category_counts),
+        "priority_status_counts": list(priority_status_counts),
+        "total_requests": qs.count(),
+    })

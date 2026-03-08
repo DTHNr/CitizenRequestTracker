@@ -2,51 +2,219 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h1 class="h3 m-0">Dashboard</h1>
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'tracker:request_list' %}">Back to list</a>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 m-0">Dashboard</h1>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'tracker:request_list' %}">Back to list</a>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card card-body text-center">
+      <h2 class="h6 text-muted">Total Requests</h2>
+      <p class="display-6 mb-0">{{ total_requests }}</p>
     </div>
-
-    <div class="alert alert-primary">Total requests: <strong>{{ total }}</strong></div>
-
-    <div class="row g-3">
-      <div class="col-md-4">
-        <div class="card card-body">
-          <h2 class="h6">By Status</h2>
-          <ul class="mb-0">
-            {% for row in by_status %}
-              <li>{{ row.status }} — {{ row.total }}</li>
-            {% empty %}
-              <li class="text-muted">No data</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div class="card card-body">
-          <h2 class="h6">By Priority</h2>
-          <ul class="mb-0">
-            {% for row in by_priority %}
-              <li>{{ row.priority }} — {{ row.total }}</li>
-            {% empty %}
-              <li class="text-muted">No data</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div class="card card-body">
-          <h2 class="h6">By Category</h2>
-          <ul class="mb-0">
-            {% for row in by_category %}
-              <li>{{ row.category__name }} — {{ row.total }}</li>
-            {% empty %}
-              <li class="text-muted">No data</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card card-body text-center">
+      <h2 class="h6 text-muted">Pending</h2>
+      <p class="display-6 mb-0 text-warning">{{ pending_count }}</p>
     </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card card-body text-center">
+      <h2 class="h6 text-muted">Resolved</h2>
+      <p class="display-6 mb-0 text-success">{{ resolved_count }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card card-body h-100">
+      <h2 class="h6">Requests by Status</h2>
+      <canvas id="statusChart"></canvas>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card card-body h-100">
+      <h2 class="h6">Requests by Priority</h2>
+      <canvas id="priorityChart"></canvas>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card card-body h-100">
+      <h2 class="h6">Requests by Category</h2>
+      <canvas id="categoryChart"></canvas>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card card-body h-100">
+      <h2 class="h6">Priority by Status</h2>
+      <canvas id="priorityStatusChart"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  let statusChart = null;
+  let priorityChart = null;
+  let categoryChart = null;
+  let priorityStatusChart = null;
+
+  function destroyIfExists(chart) {
+    if (chart) {
+      chart.destroy();
+    }
+  }
+
+  function buildStatusChart(statusCounts) {
+    const labels = Object.keys(statusCounts);
+    const values = Object.values(statusCounts);
+    const ctx = document.getElementById("statusChart").getContext("2d");
+
+    destroyIfExists(statusChart);
+
+    statusChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Requests",
+          data: values,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+  }
+
+  function buildPriorityChart(priorityCounts) {
+    const labels = Object.keys(priorityCounts);
+    const values = Object.values(priorityCounts);
+    const ctx = document.getElementById("priorityChart").getContext("2d");
+
+    destroyIfExists(priorityChart);
+
+    priorityChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Priority",
+          data: values,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true
+      }
+    });
+  }
+
+  function buildCategoryChart(categoryRows) {
+    const labels = categoryRows.map(row => row.category__name || "Uncategorized");
+    const values = categoryRows.map(row => row.total);
+    const ctx = document.getElementById("categoryChart").getContext("2d");
+
+    destroyIfExists(categoryChart);
+
+    categoryChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Requests",
+          data: values,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+  }
+
+  function buildPriorityStatusChart(rows) {
+    const priorities = ["LOW", "MEDIUM", "HIGH"];
+    const statuses = ["PENDING", "IN_PROGRESS", "RESOLVED", "REJECTED"];
+
+    const grouped = {};
+    priorities.forEach(priority => {
+      grouped[priority] = {};
+      statuses.forEach(status => {
+        grouped[priority][status] = 0;
+      });
+    });
+
+    rows.forEach(row => {
+      if (grouped[row.priority] && row.status in grouped[row.priority]) {
+        grouped[row.priority][row.status] = row.total;
+      }
+    });
+
+    const datasets = statuses.map(status => ({
+      label: status,
+      data: priorities.map(priority => grouped[priority][status]),
+      borderWidth: 1
+    }));
+
+    const ctx = document.getElementById("priorityStatusChart").getContext("2d");
+
+    destroyIfExists(priorityStatusChart);
+
+    priorityStatusChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: priorities,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            stacked: true
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+  }
+
+  async function loadDashboardCharts() {
+    const response = await fetch("{% url 'tracker:dashboard_live_summary' %}");
+    const data = await response.json();
+
+    buildStatusChart(data.status_counts);
+    buildPriorityChart(data.priority_counts);
+    buildCategoryChart(data.category_counts);
+    buildPriorityStatusChart(data.priority_status_counts);
+  }
+
+  loadDashboardCharts();
+</script>
 {% endblock %}
