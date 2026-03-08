@@ -5,7 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from .forms import RequestForm
 from .models import Request
 from . import services
@@ -22,6 +23,7 @@ def _get_filter_params(request):
 
 
 @login_required
+@never_cache
 def request_list(request):
     params = _get_filter_params(request)
     qs = services.get_request_queryset(user=request.user, **params)
@@ -43,6 +45,7 @@ def request_list(request):
 
 
 @login_required
+@never_cache
 def request_export_csv(request):
     params = _get_filter_params(request)
     qs = services.get_request_queryset(user=request.user, **params)
@@ -69,6 +72,7 @@ def request_export_csv(request):
 
 
 @login_required
+@never_cache
 def dashboard(request):
     qs = services.get_request_queryset(user=request.user)
 
@@ -86,6 +90,7 @@ def dashboard(request):
 
 
 @login_required
+@never_cache
 def request_create(request):
     form = RequestForm(request.POST or None, user=request.user)
     if request.method == "POST" and form.is_valid():
@@ -97,6 +102,7 @@ def request_create(request):
 
 
 @login_required
+@never_cache
 def request_detail(request, pk: int):
     obj = get_object_or_404(Request.objects.select_related("created_by", "assigned_to", "category"), pk=pk)
 
@@ -108,6 +114,7 @@ def request_detail(request, pk: int):
 
 
 @login_required
+@never_cache
 def request_update(request, pk: int):
     obj = get_object_or_404(Request, pk=pk)
 
@@ -125,6 +132,7 @@ def request_update(request, pk: int):
 
 
 @login_required
+@never_cache
 def request_delete(request, pk: int):
     obj = get_object_or_404(Request, pk=pk)
 

@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth.views import LogoutView
 from rest_framework.routers import DefaultRouter
 
 from tracker.api import RequestViewSet
@@ -23,10 +24,10 @@ from tracker.api import RequestViewSet
 router = DefaultRouter()
 router.register(r"requests", RequestViewSet, basename="request")
 
-
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("tracker.urls")),
+    path("logout/", LogoutView.as_view(), name="logout"),
     path("api/", include(router.urls)),
     path("api-auth/", include("rest_framework.urls")),
 ]

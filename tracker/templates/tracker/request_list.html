@@ -12,7 +12,10 @@
         </a>
         <a class="btn btn-primary btn-sm me-2" href="{% url 'tracker:request_create' %}">New Request</a>
         <span class="me-2">Logged in as <strong>{{ request.user.username }}</strong></span>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'admin:logout' %}">Logout</a>
+        <form method="post" action="{% url 'logout' %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-secondary btn-sm">Logout</button>
+        </form>
       </div>
     </div>
 
